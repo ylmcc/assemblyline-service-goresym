@@ -1,0 +1,89 @@
+name: GoReSym
+version: $SERVICE_TAG
+description: >
+  Recovers Go symbol and build metadata (compiler version, architecture, embedded
+  source file paths, module/dependency info, and function/type names) from
+  Go-compiled Windows PE / Linux ELF / Mach-O executables, including stripped
+  binaries, using a vendored copy of Mandiant's GoReSym. Purely static: parses the
+  pclntab/moduledata structures Go embeds in the binary and never executes the
+  sample.
+
+accepts: executable/windows/pe.*|executable/linux/elf.*|executable/mach-o.*
+rejects: empty|metadata/.*
+
+stage: CORE
+category: Static Analysis
+file_required: true
+timeout: 120
+disable_cache: false
+enabled: true
+is_external: false
+licence_count: 0
+
+submission_params:
+  - name: extraction_timeout_seconds
+    type: int
+    default: 60
+    value: 60
+  - name: max_extraction_memory_mb
+    type: int
+    default: 1024
+    value: 1024
+  - name: max_rows_displayed
+    type: int
+    default: 200
+    value: 200
+  - name: recover_types
+    type: bool
+    default: true
+    value: true
+  - name: include_stdlib_packages
+    type: bool
+    default: false
+    value: false
+  - name: print_file_paths
+    type: bool
+    default: true
+    value: true
+  - name: extract_strings
+    type: bool
+    default: false
+    value: false
+  - name: version_override
+    type: str
+    default: ""
+    value: ""
+
+heuristics:
+  - heur_id: 1
+    name: Go binary symbol metadata recovered
+    description: GoReSym successfully identified this as a Go-compiled binary and recovered its compiler version/architecture metadata.
+    filetype: ".*"
+    score: 0
+  - heur_id: 2
+    name: Embedded developer file paths recovered
+    description: Source file paths embedded in the Go binary's pclntab were recovered -- these often reveal the build machine's directory layout, a useful attribution/OPSEC signal.
+    filetype: ".*"
+    score: 50
+  - heur_id: 3
+    name: Embedded Go module/build info recovered
+    description: Go module path, version, and/or dependency information (embedded via debug.ReadBuildInfo) was recovered -- the main module path in particular can reveal a private repository name tied to the binary's authors.
+    filetype: ".*"
+    score: 50
+  - heur_id: 4
+    name: Not a recognized Go binary
+    description: GoReSym could not recover Go symbol metadata from this file -- it is not Go-compiled, or uses an unsupported/undetected Go runtime version.
+    filetype: ".*"
+    score: 0
+  - heur_id: 5
+    name: Extraction incomplete or failed
+    description: GoReSym did not complete (timeout or unparseable/failed output) -- results, if any, reflect only what was recovered.
+    filetype: ".*"
+    score: 0
+
+docker_config:
+  image: kylemc54321/assemblyline-service-goresym:$SERVICE_TAG
+  cpu_cores: 1
+  ram_mb_min: 256
+  ram_mb: 1536
+  allow_internet_access: false

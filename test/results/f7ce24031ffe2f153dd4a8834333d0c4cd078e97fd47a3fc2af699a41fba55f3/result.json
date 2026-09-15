@@ -1,0 +1,204 @@
+{
+  "extra": {
+    "drop_file": false,
+    "score": 100,
+    "sections": [
+      {
+        "auto_collapse": false,
+        "body": {
+          "arch": "amd64",
+          "build_id": "Zb9QmokKTiOUgHKmaIwz/wd2rtE3W9PN-um1Ocdzh/qTdqcTY_jVajHy_-TtYv/Z_kJu9M77OjfijEiHMcF",
+          "go_version": "1.20.4",
+          "os": "linux",
+          "pclntab_version": "1.18",
+          "pointer_size": 8
+        },
+        "body_config": {},
+        "body_format": "KEY_VALUE",
+        "classification": "TLP:C",
+        "depth": 0,
+        "heuristic": {
+          "attack_ids": [],
+          "frequency": 1,
+          "heur_id": 1,
+          "score": 0,
+          "score_map": {},
+          "signatures": {
+            "go_binary_recovered": 1
+          }
+        },
+        "promote_to": null,
+        "tags": {},
+        "title_text": "Go binary metadata",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": {
+          "dependency_count": 1,
+          "main_module_path": "github.com/example-org/private-implant-repo",
+          "main_module_version": "(devel)"
+        },
+        "body_config": {},
+        "body_format": "KEY_VALUE",
+        "classification": "TLP:C",
+        "depth": 0,
+        "heuristic": {
+          "attack_ids": [],
+          "frequency": 1,
+          "heur_id": 3,
+          "score": 50,
+          "score_map": {},
+          "signatures": {
+            "module_info_recovered": 1
+          }
+        },
+        "promote_to": null,
+        "tags": {},
+        "title_text": "Embedded Go module/build info",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": [
+          {
+            "path": "/home/devuser/go/src/github.com/example-org/private-implant-repo/cmd/agent/main.go"
+          }
+        ],
+        "body_config": {
+          "column_order": [
+            "path"
+          ]
+        },
+        "body_format": "TABLE",
+        "classification": "TLP:C",
+        "depth": 0,
+        "heuristic": {
+          "attack_ids": [],
+          "frequency": 1,
+          "heur_id": 2,
+          "score": 50,
+          "score_map": {},
+          "signatures": {
+            "file_paths_recovered": 1
+          }
+        },
+        "promote_to": null,
+        "tags": {},
+        "title_text": "Embedded source file paths",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": [
+          {
+            "end": "0x401100",
+            "name": "main.main",
+            "package": "main",
+            "start": "0x401000"
+          }
+        ],
+        "body_config": {
+          "column_order": [
+            "name",
+            "package",
+            "start",
+            "end"
+          ]
+        },
+        "body_format": "TABLE",
+        "classification": "TLP:C",
+        "depth": 0,
+        "heuristic": null,
+        "promote_to": null,
+        "tags": {},
+        "title_text": "User-defined functions",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": [
+          {
+            "kind": "struct",
+            "name": "main.implantConfig",
+            "va": "0x49f000"
+          }
+        ],
+        "body_config": {
+          "column_order": [
+            "name",
+            "kind",
+            "va"
+          ]
+        },
+        "body_format": "TABLE",
+        "classification": "TLP:C",
+        "depth": 0,
+        "heuristic": null,
+        "promote_to": null,
+        "tags": {},
+        "title_text": "Recovered types",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": [
+          {
+            "start": "0x53ec60",
+            "value": "beacon check-in failed"
+          }
+        ],
+        "body_config": {
+          "column_order": [
+            "value",
+            "start"
+          ]
+        },
+        "body_format": "TABLE",
+        "classification": "TLP:C",
+        "depth": 0,
+        "heuristic": null,
+        "promote_to": null,
+        "tags": {},
+        "title_text": "Extracted Go strings",
+        "zeroize_on_tag_safe": false
+      }
+    ]
+  },
+  "files": {
+    "extracted": [],
+    "supplementary": [
+      {
+        "name": "goresym_output.json",
+        "sha256": "df1f7a58fa6aa4c3b85c5f219529fb079f1ddf2c355a108e15b84cabed6bd80c"
+      }
+    ]
+  },
+  "results": {
+    "heuristics": [
+      {
+        "attack_ids": [],
+        "heur_id": 1,
+        "signatures": [
+          "go_binary_recovered"
+        ]
+      },
+      {
+        "attack_ids": [],
+        "heur_id": 2,
+        "signatures": [
+          "file_paths_recovered"
+        ]
+      },
+      {
+        "attack_ids": [],
+        "heur_id": 3,
+        "signatures": [
+          "module_info_recovered"
+        ]
+      }
+    ],
+    "tags": {},
+    "temp_submission_data": {}
+  }
+}

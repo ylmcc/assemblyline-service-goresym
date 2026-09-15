@@ -1,0 +1,17 @@
+This repository vendors a prebuilt binary of GoReSym:
+
+    Project:  GoReSym
+    Author:   Mandiant (Google Cloud) FLARE team
+    Source:   https://github.com/mandiant/GoReSym
+    Commit:   722897e0a80da0a06c00c5e40591a253a551f04e
+    License:  MIT (see goresym_service/vendor/GoReSym_LICENSE, copied verbatim)
+
+goresym_service/vendor/GoReSym is the unmodified, prebuilt Linux binary from that
+project -- no source changes were made. It is invoked as a subprocess and its output
+is parsed by this service's own original code (goresym_service/runner.py,
+goresym_service/goresym_service.py), which is licensed under this repository's own
+MIT LICENSE.
+
+GoReSym itself depends on a few other MIT-licensed projects (orderedmap by
+elliotchance, binaryregexp by rsc, and the Go standard library/runtime source); see
+the upstream project's README and its own `-about` output for those attributions.
