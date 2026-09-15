@@ -23,6 +23,10 @@ from assemblyline_v4_service.common.result import (
 
 from goresym_service.runner import run_goresym
 
+_GHIDRA_IMPORT_SCRIPT = os.path.join(
+    os.path.dirname(__file__), "vendor", "ghidra_import", "goresym_rename.py"
+)
+
 
 class GoReSym(ServiceBase):
     def __init__(self, config=None) -> None:
@@ -67,12 +71,12 @@ class GoReSym(ServiceBase):
             return
 
         if not goresym.ok:
-            not_go = ResultSection(
-                "Not a recognized Go binary",
-                body=f"GoReSym could not recover Go symbol metadata from this file: {goresym.error}",
-            )
-            not_go.set_heuristic(4, signature="not_a_go_binary")
-            result.add_section(not_go)
+            # Not a Go binary -- this is the overwhelmingly common outcome across the
+            # broad executable/* accepts filter (most PE/ELF/Mach-O submissions this
+            # service ever sees aren't Go-compiled), and isn't actionable/interesting
+            # to an analyst, so stay silent rather than add a "not a recognized Go
+            # binary" note to the vast majority of submissions. The raw GoReSym output
+            # is still attached as a supplementary file for anyone who wants to check.
             request.result = result
             self._save_log(request, goresym)
             return
@@ -123,6 +127,7 @@ class GoReSym(ServiceBase):
                     name=fn.get("FullName"), package=fn.get("PackageName"),
                     start=hex(fn.get("Start", 0)), end=hex(fn.get("End", 0)),
                 ))
+            func_table.set_heuristic(6, signature="user_functions_recovered")
             result.add_section(func_table)
 
         types = data.get("Types") or []
@@ -130,6 +135,7 @@ class GoReSym(ServiceBase):
             type_table = ResultTableSection("Recovered types")
             for t in types[:max_rows]:
                 type_table.add_row(TableRow(name=t.get("Str"), kind=t.get("Kind"), va=hex(t.get("VA", 0))))
+            type_table.set_heuristic(7, signature="types_recovered")
             result.add_section(type_table)
 
         strings_found = data.get("Strings") or []
@@ -137,7 +143,14 @@ class GoReSym(ServiceBase):
             string_table = ResultTableSection("Extracted Go strings")
             for s in strings_found[:max_rows]:
                 string_table.add_row(TableRow(value=s.get("Str"), start=hex(s.get("Start", 0))))
+            string_table.set_heuristic(8, signature="strings_recovered")
             result.add_section(string_table)
+
+        request.add_supplementary(
+            _GHIDRA_IMPORT_SCRIPT, "goresym_rename.py",
+            "Ghidra script (upstream GoReSym, run from Ghidra's Script Manager) that imports "
+            "goresym_output.json to rename functions and label pclntab/moduledata in a disassembly.",
+        )
 
         request.result = result
         self._save_log(request, goresym)

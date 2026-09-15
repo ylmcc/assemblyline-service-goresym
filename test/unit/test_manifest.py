@@ -40,3 +40,10 @@ def test_no_internet_access():
 def test_vendored_binary_is_executable():
     binary_path = os.path.join(os.path.dirname(__file__), "..", "..", "goresym_service", "vendor", "GoReSym")
     assert os.access(binary_path, os.X_OK)
+
+
+def test_ghidra_import_script_present():
+    script_path = os.path.join(
+        os.path.dirname(__file__), "..", "..", "goresym_service", "vendor", "ghidra_import", "goresym_rename.py"
+    )
+    assert os.path.isfile(script_path)
