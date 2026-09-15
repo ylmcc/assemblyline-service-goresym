@@ -80,6 +80,21 @@ heuristics:
     description: GoReSym did not complete (timeout or unparseable/failed output) -- results, if any, reflect only what was recovered.
     filetype: ".*"
     score: 0
+  - heur_id: 6
+    name: User-defined functions recovered
+    description: GoReSym recovered named user-defined (non-stdlib) function symbols from the binary's pclntab.
+    filetype: ".*"
+    score: 0
+  - heur_id: 7
+    name: Types recovered
+    description: GoReSym recovered Go type/struct definitions via the binary's moduledata typelinks.
+    filetype: ".*"
+    score: 0
+  - heur_id: 8
+    name: Embedded Go strings recovered
+    description: GoReSym extracted embedded Go strings from the binary's string-intern table.
+    filetype: ".*"
+    score: 0
 
 docker_config:
   image: kylemc54321/assemblyline-service-goresym:$SERVICE_TAG

@@ -38,6 +38,13 @@ It is invoked as a subprocess and its output is parsed by this service's own ori
 code (goresym_service/runner.py, goresym_service/goresym_service.py), which is
 licensed under this repository's own MIT LICENSE.
 
+goresym_service/vendor/ghidra_import/goresym_rename.py is copied unmodified from
+upstream's GhidraPython/goresym_rename.py (same commit, same MIT license). This
+service attaches it as a static supplementary file on every successful result,
+alongside the per-sample goresym_output.json it's designed to import, so an analyst
+can rename functions and label pclntab/moduledata directly in Ghidra without needing
+to separately find/clone the upstream repo.
+
 GoReSym itself depends on a few other MIT-licensed projects (orderedmap by
 elliotchance, binaryregexp by rsc, and the Go standard library/runtime source); see
 the upstream project's README and its own `-about` output for those attributions.
