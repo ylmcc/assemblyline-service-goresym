@@ -6,11 +6,37 @@ This repository vendors a prebuilt binary of GoReSym:
     Commit:   722897e0a80da0a06c00c5e40591a253a551f04e
     License:  MIT (see goresym_service/vendor/GoReSym_LICENSE, copied verbatim)
 
-goresym_service/vendor/GoReSym is the unmodified, prebuilt Linux binary from that
-project -- no source changes were made. It is invoked as a subprocess and its output
-is parsed by this service's own original code (goresym_service/runner.py,
-goresym_service/goresym_service.py), which is licensed under this repository's own
-MIT LICENSE.
+goresym_service/vendor/GoReSym is a prebuilt Linux binary built from that project's
+source at the commit above, WITH ONE MODIFICATION to main.go: see
+goresym_service/vendor/moduledata_fallback.patch (a plain unified diff against
+upstream's main.go) for the exact change, summarized here per MIT's attribution
+requirements:
+
+Upstream's extraction pipeline (main.go, main_impl) requires two independent things
+to both succeed before it will report anything: (1) a pclntab candidate whose header
+validates (correct magic/quantum/pointer-size), AND (2) a corroborating `moduledata`
+structure found by searching the whole file for the literal pointer-to-pclntab byte
+value. If (2) fails for every candidate, upstream discards even a perfectly valid (1)
+and reports "no valid pclntab found" -- function and file metadata is fully
+recoverable from the pclntab alone, without moduledata, but upstream never gets that
+far.
+
+This was not a hypothetical: a real, otherwise-unremarkable Go 1.27.1 Windows PE
+sample was confirmed (by manually re-implementing the same header validation upstream
+uses, then confirming the expected moduledata pointer value genuinely does not appear
+anywhere in the file) to have exactly this problem. The patch tracks the first
+candidate whose header validated even when no moduledata could be found, and falls
+back to it -- recovering full user/std function names and embedded file paths (217
+and 253 respectively on that sample) instead of a flat failure. Type/interface
+recovery is correctly skipped in this fallback case, since that specifically requires
+moduledata's typelinks/itablinks. The normal, moduledata-found path (and everything
+downstream of it, e.g. type recovery) is untouched -- verified by running the patched
+binary against GoReSym's own binary, a real Go binary that already worked before this
+change, and confirming Types/UserFunctions counts are identical to upstream.
+
+It is invoked as a subprocess and its output is parsed by this service's own original
+code (goresym_service/runner.py, goresym_service/goresym_service.py), which is
+licensed under this repository's own MIT LICENSE.
 
 GoReSym itself depends on a few other MIT-licensed projects (orderedmap by
 elliotchance, binaryregexp by rsc, and the Go standard library/runtime source); see

@@ -1,0 +1,91 @@
+diff --git a/main.go b/main.go
+index 9958f55..81cc622 100644
+--- a/main.go
++++ b/main.go
+@@ -197,6 +197,18 @@ restartParseWithRealTextBase:
+ 
+ 	var moduleData *objfile.ModuleData = nil
+ 	var finalTab *objfile.PclntabCandidate = nil
++	// MODIFIED BY ylmcc: some real, well-formed Go binaries have a pclntab whose
++	// header validates cleanly (correct magic/quantum/ptrsize) but whose moduledata
++	// cross-reference (a literal pointer-to-pclntab byte pattern moduledata_scan
++	// searches for elsewhere in the file) cannot be found -- confirmed on a real
++	// sample where that exact 8-byte pointer value does not appear anywhere on
++	// disk, likely because it's populated via a base relocation at load time rather
++	// than baked into the file. Upstream discards such a candidate entirely ("no
++	// valid pclntab found"), even though function/file metadata is still fully
++	// recoverable from the pclntab alone without moduledata. Remember the first
++	// candidate whose header parsed to a real, magic-confirmed version (not the
++	// "Unknown"/"1.1" sentinel used for an unvalidated/failed header) as a fallback.
++	var headerOnlyTab *objfile.PclntabCandidate = nil
+ 	for tab := range ch_tabs {
+ 		if len(versionOverride) > 0 {
+ 			extractMetadata.Version = versionOverride
+@@ -252,20 +264,51 @@ restartParseWithRealTextBase:
+ 			finalTab = &tab
+ 			moduleData = tmpModData
+ 			break
++		} else if headerOnlyTab == nil {
++			// MODIFIED BY ylmcc: no moduledata corroboration for this candidate, but
++			// remember it if its header genuinely validated (magic matched -- see
++			// comment above the headerOnlyTab declaration).
++			ver := tab.ParsedPclntab.Go12line.Version.String()
++			if ver != "Unknown" && ver != "1.1" {
++				tabCopy := tab
++				headerOnlyTab = &tabCopy
++			}
+ 		}
+ 	}
+ 
+ 	if finalTab == nil {
+-		return ExtractMetadata{}, fmt.Errorf("no valid pclntab found")
+-	}
++		// MODIFIED BY ylmcc: fall back to a header-only-validated candidate rather
++		// than failing outright -- see comment above the headerOnlyTab declaration.
++		if headerOnlyTab == nil {
++			return ExtractMetadata{}, fmt.Errorf("no valid pclntab found")
++		}
++		finalTab = headerOnlyTab
+ 
+-	// to be sure we got the right pclntab we had to have found a moduledat as well. If we didn't, then we failed to find the pclntab (correctly) as well
+-	if moduleData == nil {
+-		return ExtractMetadata{}, fmt.Errorf("no valid moduledata found")
++		// TabMeta.* above was populated from whichever candidate the loop iterated
++		// last, not necessarily finalTab -- recompute it from finalTab specifically.
++		extractMetadata.TabMeta.CpuQuantum = finalTab.ParsedPclntab.Go12line.Quantum
++		extractMetadata.TabMeta.CpuQuantumStr = "x86/x64/wasm"
++		if extractMetadata.TabMeta.CpuQuantum == 2 {
++			extractMetadata.TabMeta.CpuQuantumStr = "s390x"
++		} else if extractMetadata.TabMeta.CpuQuantum == 4 {
++			extractMetadata.TabMeta.CpuQuantumStr = "arm/mips/ppc/riscv"
++		}
++		extractMetadata.TabMeta.VA = finalTab.PclntabVA
++		extractMetadata.TabMeta.Version = finalTab.ParsedPclntab.Go12line.Version.String()
++		extractMetadata.TabMeta.Endianess = finalTab.ParsedPclntab.Go12line.Binary.String()
++		extractMetadata.TabMeta.PointerSize = finalTab.ParsedPclntab.Go12line.Ptrsize
+ 	}
+ 
+-	extractMetadata.ModuleMeta = *moduleData
+-	if printTypes && manualTypeAddress == 0 {
++	// MODIFIED BY ylmcc: upstream hard-failed the whole extraction here ("no valid
++	// moduledata found") whenever moduledata_scan couldn't find a corroborating
++	// pointer-to-pclntab byte pattern in the file. Function/file metadata below is
++	// fully recoverable from finalTab.ParsedPclntab alone, without moduledata --
++	// only type/interface recovery (which needs moduledata's typelinks/itablinks)
++	// has to be skipped in that case, not the entire extraction.
++	if moduleData != nil {
++		extractMetadata.ModuleMeta = *moduleData
++	}
++	if printTypes && manualTypeAddress == 0 && moduleData != nil {
+ 		types, err := file.ParseTypeLinks(extractMetadata.Version, moduleData, extractMetadata.TabMeta.PointerSize == 8, extractMetadata.TabMeta.Endianess == "LittleEndian")
+ 		if err == nil {
+ 			extractMetadata.Types = types
+@@ -276,7 +319,7 @@ restartParseWithRealTextBase:
+ 		if err == nil {
+ 			extractMetadata.Interfaces = interfaces
+ 		}
+-	} else if manualTypeAddress != 0 {
++	} else if manualTypeAddress != 0 && moduleData != nil {
+ 		types, err := file.ParseType(extractMetadata.Version, moduleData, uint64(manualTypeAddress), extractMetadata.TabMeta.PointerSize == 8, extractMetadata.TabMeta.Endianess == "LittleEndian")
+ 		if err == nil {
+ 			extractMetadata.Types = types
